@@ -66,12 +66,12 @@ public class Main implements Opcodes {
 		}
 		processClasses.forEach((k,v) -> classpath.put(k.replace(".class",""),v));
 		boolean changes = true;
-		new GraphCF().doOn(processClasses);
+		new GraphCF("pre").doOn(processClasses);
 		while(changes){
 			changes = or(
-					new BipushFold().doOn(processClasses),
+					new BipushFold().doOn(processClasses)
 					//new LocalConstantField().doOn(processClasses)
-					new SplitBlocks().doOn(processClasses)
+					//new SplitBlocks().doOn(processClasses)
 			);
 		}
 
