@@ -1,27 +1,17 @@
 package me.enterman.bipush.resolvers
 
-import com.google.common.collect.MultimapBuilder
 import com.google.common.graph.EndpointPair
 import com.google.common.graph.GraphBuilder
-import guru.nidi.graphviz.attribute.Attributes
 import guru.nidi.graphviz.engine.Format
 import guru.nidi.graphviz.engine.Graphviz
-import guru.nidi.graphviz.model.Factory
-import guru.nidi.graphviz.model.Factory.*
-import guru.nidi.graphviz.model.Graph
-import guru.nidi.graphviz.model.Link
-import guru.nidi.graphviz.model.MutableGraph
 import guru.nidi.graphviz.parse.Parser
 import me.enterman.bipush.NodeUtils.terminates
-import org.checkerframework.checker.units.qual.g
-import org.jgrapht.graph.DefaultEdge
 import org.jgrapht.graph.guava.MutableGraphAdapter
 import org.jgrapht.nio.dot.DOTExporter
 import org.objectweb.asm.Label
 import org.objectweb.asm.tree.*
 import java.io.File
 import java.io.StringWriter
-import javax.swing.JFrame
 
 
 // const val  = true
@@ -31,84 +21,67 @@ class GraphCF : Resolver() {
         classes.values.forEach { classNode ->
             classNode.methods.forEach { methodNode ->
 
-
+                //val graph1 = mutGraph().setDirected(true)
                 val graph = GraphBuilder
                         .directed()
                         .allowsSelfLoops(true)
                         .build<Int>()
-                val labelMap = mutableMapOf<Int,Label>()
+                if(methodNode.instructions.first !is LabelNode)
+                    graph.addNode(-1)
 
-                /**
-                 * A map that stores referenced labels that has not giving an int yet
-                 * Key: Label that is referenced
-                 * Value(s): Labels that referred to another label
-                 * */
-                val accumulatingLabels = MultimapBuilder
-                        .hashKeys()
-                        .hashSetValues()
-                        .build<Label,Int>()
-
-// The initial start does not require a label
-                labelMap[-1] = Label()
-				graph.addNode(-1)
+                val labelMap = mutableMapOf<Label,Int>()
+                methodNode.instructions.forEach {
+                    if(it is LabelNode){
+                        graph.addNode(labelMap.size)
+                        labelMap[it.label] = labelMap.size
+                    }
+                }
                 methodNode.instructions.forEach { inst ->
                     when(inst){
                         is LabelNode -> {
-
-                            var/*l*/ thisInt = labelMap.values.size - 1
-
-
-                            // Go back to see if the previous label never goes to this label
+                            val thisInt = labelMap[inst.label]!!
                             var prev = inst.previous
-
                             while(true){
                                 if(prev == null || prev is LabelNode){
-                                    graph.putEdge(thisInt - 1, thisInt)
+                                    if(graph.nodes().contains(thisInt - 1))
+                                        graph.putEdge(thisInt - 1, thisInt)
                                     break
                                 }
                                 if(prev.terminates())
                                     break
                                 prev = prev.previous
                             }
-							graph.addNode(thisInt)
-
-
-
-                            labelMap[thisInt] = inst.label
-
-                            if(accumulatingLabels.containsKey(inst.label)){
-                                accumulatingLabels.get(inst.label).forEach {
-                                    graph.putEdge(it,thisInt)
-                                }
-                                accumulatingLabels.removeAll(inst.label)
-                            }
-
                         }
                         else -> {
-                            val labelInt = labelMap.values.size - 2
-                            @Suppress("Duplicates")
+                            val thisInt:Int
+                            var prev = inst.previous
+                            while (true){
+                                if(prev == null){
+                                    thisInt = -1
+                                    break
+                                }
+                                if(prev is LabelNode){
+                                    thisInt = labelMap[prev.label]!!
+                                    break
+                                }
+                                prev = prev.previous
+                            }
+                            //@Suppress("Duplicates")
                             when (inst){
                                 is JumpInsnNode -> {
-                                    val numbers = labelMap.filterValues { it == inst.label.label }.keys
-                                    if(numbers.isEmpty())
-                                        accumulatingLabels.put(inst.label.label,labelInt)
-                                    else
-                                        numbers.forEach { graph.putEdge(labelInt,it) }
+                                    graph.putEdge(thisInt,labelMap[inst.label.label]!!)
                                 }
-
                                 is LookupSwitchInsnNode -> {
-                                    val numbers = labelMap.filterValues { label -> label == inst.dflt.label || inst.labels.map{it.label}.contains(label) }.keys
-                                    if(numbers.isEmpty())
-                                        accumulatingLabels.put(inst.dflt.label,labelInt)
-                                    else
-                                        numbers.forEach { graph.putEdge(labelInt,it) }
+                                    inst.labels.forEach {
+                                        graph.putEdge(thisInt,labelMap[it.label]!!)
+                                    }
+                                    graph.putEdge(thisInt,labelMap[inst.dflt.label]!!)
                                 }
                                 is TableSwitchInsnNode -> {
-                                    val numbers = labelMap.filterValues { label -> label == inst.dflt.label || inst.labels.map{it.label}.contains(label) }.keys
-                                    if(numbers.isEmpty())
-                                        accumulatingLabels.put(inst.dflt.label,labelInt)
-                                    else
-                                        numbers.forEach { graph.putEdge(labelInt,it) }
+                                    inst.labels.forEach {
+                                        graph.putEdge(thisInt,labelMap[it.label]!!)
+                                    }
+                                    graph.putEdge(thisInt,labelMap[inst.dflt.label]!!)
                                 }
                             }
                         }
@@ -125,11 +98,8 @@ class GraphCF : Resolver() {
                             labels.add(next.label)
                         next = next.next
                     }
-                    labels.map { label -> labelMap.filterValues { it == label } }.map { it.keys }.flatten().forEach { from ->
-                        labelMap.filterValues { it == node.handler.label }.keys.forEach {
-                            graph.putEdge(from,it)
-                        }
-
+                    labels.map { label -> labelMap[label]!! }.forEach { from ->
+                        graph.putEdge(from,labelMap[node.handler.label]!!)
                     }
                 }}
                 val exporter = DOTExporter<Int, EndpointPair<Int>>()
@@ -155,7 +125,6 @@ class GraphCF : Resolver() {
             }
         }
         return false
-        // TODO Implement JUNG visualization
     }
 
 }
