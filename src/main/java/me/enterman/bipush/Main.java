@@ -39,7 +39,7 @@ public class Main implements Opcodes {
 	public void main() throws Throwable{
 		loadLibrary(new File("C:\\Program Files\\AdoptOpenJDK\\jdk-8.0.242.08-hotspot\\jre\\lib"));
 
-		ZipFile zipFile = new ZipFile(Main.class.getResource("/CrackMe.jar").getFile());
+		ZipFile zipFile = new ZipFile(Main.class.getResource("/jars/CrackMe.jar").getFile());
 		Enumeration<? extends ZipEntry> entries = zipFile.entries();
 		while (entries.hasMoreElements()) {
 			boolean wasNotClass = true;
