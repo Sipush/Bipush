@@ -4,3 +4,4 @@ photos
 *.iml
 build
 jars
+*.jar

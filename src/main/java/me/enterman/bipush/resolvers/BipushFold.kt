@@ -96,9 +96,6 @@ class BipushFold : Resolver() {
                             INEG -> {
                                 val oneBefore = ain.previous
                                 if(isConstantInt(oneBefore)){
-                                    /* This one is for inverting an int, so I think when you write something like i = -1
-                                It is actually ICONST_M1 and not ICONST_1 and then using INEG to invert it.
-                                */
                                     val replace = InsnList()
                                     replace.add(fromInt(-oneBefore.toInt()))
                                     replacements[listOf(oneBefore,ain)] = replace
