@@ -74,7 +74,11 @@ object NodeUtils {
 			else -> throw IllegalArgumentException("WTF? Node is not InsnNode or IntInsnNode")
 		}
 	}
-
+	fun insnListOf(vararg insnNode: AbstractInsnNode):InsnList{
+		return InsnList().also {
+			insnNode.forEach { node->it.add(node) }
+		}
+	}
 	/**
 	 * Generates the <code>InsnNode</code> for a number.
 	 * It will find the most Optimistic node for the number.
@@ -101,10 +105,10 @@ object NodeUtils {
 		}
 	}
 
-	fun isConstantInt(node: AbstractInsnNode): Boolean {
-		if (node is LdcInsnNode)
-			return node.cst is Int
-		return when (node.opcode) {
+	fun AbstractInsnNode.isConstantInt(): Boolean {
+		if (this is LdcInsnNode)
+			return cst is Int
+		return when (opcode) {
 			BIPUSH, SIPUSH, ICONST_0, ICONST_1, ICONST_2, ICONST_3, ICONST_4, ICONST_5, ICONST_M1 -> true
 			else -> false
 		}
