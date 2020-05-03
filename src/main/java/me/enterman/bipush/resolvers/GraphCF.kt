@@ -27,7 +27,7 @@ fun main() {
 // const val  = true
 @Suppress("UnstableApiUsage")
 class GraphCF(private val folderName: String) : Resolver() {
-	override fun doOn(classes: Map<String, ClassNode>): Boolean {
+	override fun doOn(classes: MutableMap<String, ClassNode>): Boolean {
 		classes.values.forEach { classNode ->
 			classNode.methods.forEach { methodNode ->
                 export(methodNode,classNode)

@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 
 class SplitBlocks : Resolver() {
-    override fun doOn(classes: Map<String, ClassNode>): Boolean {
+    override fun doOn(classes: MutableMap<String, ClassNode>): Boolean {
         val counter = AtomicInteger()
         classes.values.forEach { classNode ->
             classNode.methods.stream().filter { methodNode -> methodNode.instructions.first != null }.forEach { methodNode ->

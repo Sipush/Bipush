@@ -1,8 +1,6 @@
 package me.enterman.bipush.resolvers
 
 import com.google.common.collect.MultimapBuilder
-import com.google.common.collect.Multimaps
-import me.enterman.bipush.NodeUtils.isConstantInt
 import org.objectweb.asm.Opcodes.ISTORE
 import org.objectweb.asm.tree.AbstractInsnNode
 import org.objectweb.asm.tree.ClassNode
@@ -10,7 +8,7 @@ import org.objectweb.asm.tree.VarInsnNode
 
 class LocalConstantField : Resolver() {
 
-    override fun doOn(classes: Map<String, ClassNode>): Boolean {
+    override fun doOn(classes: MutableMap<String, ClassNode>): Boolean {
         classes.values.forEach { node ->
 
             node.methods.stream().filter { it.instructions.first != null }.forEach { methodNode ->

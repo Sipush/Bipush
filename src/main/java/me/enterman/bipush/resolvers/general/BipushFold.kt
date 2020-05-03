@@ -1,9 +1,11 @@
-package me.enterman.bipush.resolvers
+package me.enterman.bipush.resolvers.general
 
-import me.enterman.bipush.NodeUtils.fromInt
+import me.enterman.bipush.NodeUtils.insnListOf
 import me.enterman.bipush.NodeUtils.isConstant
 import me.enterman.bipush.NodeUtils.isConstantInt
 import me.enterman.bipush.NodeUtils.toInt
+import me.enterman.bipush.NodeUtils.toNode
+import me.enterman.bipush.resolvers.SimpleReplacementResolver
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
 
@@ -11,10 +13,10 @@ class BipushFold : SimpleReplacementResolver() {
     //val logger = LoggerFactory.getLogger(this.javaClass)
     
     override fun doReplace(methodNode: MethodNode, replacements: MutableMap<List<AbstractInsnNode>, InsnList>) {
-        val nops = counters.addCounter("nop")
-        val constantStringLength = counters.addCounter("\"string\".length() call")
-        val constantStringHashCode = counters.addCounter("\"string\".hashCode() call")
-        val constantIntCalc = counters.addCounter("useless arithemetic operation")
+        //val nops = counters.addCounter("nop")
+        //val constantStringLength = counters.addCounter("\"string\".length() call")
+        ///val constantStringHashCode = counters.addCounter("\"string\".hashCode() call")
+        //val constantIntCalc = counters.addCounter("useless arithemetic operation")
         methodNode.instructions.forEach {ain->
         
             
@@ -22,7 +24,7 @@ class BipushFold : SimpleReplacementResolver() {
             when (ain.opcode) {
                 NOP -> { // We don't want NOPs to get in our way, mainly because NOP does exactly nothing.
                     replacements[listOf(ain)] = InsnList()
-                    nops.getAndIncrement()
+                    //nops.getAndIncrement()
                 }
                 INVOKESTATIC -> {
                     if(ain is MethodInsnNode)
@@ -30,7 +32,7 @@ class BipushFold : SimpleReplacementResolver() {
                             if(ain.name == "reverse"){
                                 val before = ain.previous?: return@forEach
                                 if(before.isConstantInt()){
-                                    replacements[listOf(before,ain)] = InsnList().also { it.add(fromInt(Integer.reverse(before.toInt()))) }
+                                    replacements[listOf(before,ain)] = InsnList().also { it.add(toNode(Integer.reverse(before.toInt()))) }
                                 }
                             }
                 }
@@ -45,7 +47,7 @@ class BipushFold : SimpleReplacementResolver() {
                                             val replacement = InsnList()
                                             replacement.add(LdcInsnNode((before.cst as String).length))
                                             replacements[listOf(before, ain)] = replacement
-                                            constantStringLength.getAndIncrement()
+                                            //constantStringLength.getAndIncrement()
                                         }
                             } else if(ain.name == "hashCode") {
                                 val before = ain.previous
@@ -53,9 +55,9 @@ class BipushFold : SimpleReplacementResolver() {
                                     if (before is LdcInsnNode) // Constant String's hashCode is always constant.
                                         if (before.cst is String) {
                                             val replacement = InsnList()
-                                            replacement.add(fromInt((before.cst as String).hashCode()))
+                                            replacement.add(toNode((before.cst as String).hashCode()))
                                             replacements[listOf(before, ain)] = replacement
-                                            constantStringHashCode.getAndIncrement()
+                                            //constantStringHashCode.getAndIncrement()
                                         }
                             }
                 
@@ -79,7 +81,7 @@ class BipushFold : SimpleReplacementResolver() {
 							All defining a constant number, such as int a = 1+1, we will then make 'a' always 2.
 					*/
                         val replace = InsnList()
-                        replace.add(fromInt(when (ain.opcode) {
+                        replace.add(toNode(when (ain.opcode) {
                             IADD -> oneBefore.toInt() + twoBefore.toInt()
                             ISUB -> twoBefore.toInt() - oneBefore.toInt()
                             ISHR -> twoBefore.toInt() shr oneBefore.toInt()
@@ -94,16 +96,16 @@ class BipushFold : SimpleReplacementResolver() {
                             else -> throw IllegalStateException("WTF?")
                         }))
                         replacements[listOf(twoBefore, oneBefore, ain)] = replace
-                        constantIntCalc.getAndIncrement()
+                        //constantIntCalc.getAndIncrement()
                     }
                 }
                 INEG -> {
                     val oneBefore = ain.previous
                     if(oneBefore.isConstantInt()){
                         val replace = InsnList()
-                        replace.add(fromInt(-oneBefore.toInt()))
+                        replace.add(toNode(-oneBefore.toInt()))
                         replacements[listOf(oneBefore,ain)] = replace
-                        constantIntCalc.getAndIncrement()
+                        //constantIntCalc.getAndIncrement()
                     }
                 }
                 POP2 -> {
@@ -119,6 +121,11 @@ class BipushFold : SimpleReplacementResolver() {
                     val oneBefore = ain.previous
                     if(oneBefore.isConstant())
                         replacements[listOf(oneBefore,ain)] = InsnList()
+                }
+                IFEQ -> {
+                    val oneBefore = ain.previous
+                    if(oneBefore.opcode == ICONST_0)
+                        replacements[listOf(oneBefore,ain)] = insnListOf(JumpInsnNode(GOTO,(ain as JumpInsnNode).label))
                 }
             }
         

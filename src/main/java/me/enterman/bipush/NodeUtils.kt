@@ -9,32 +9,33 @@ object NodeUtils {
 	fun AbstractInsnNode.isInstruction(): Boolean {
 		return this !is LabelNode && this !is FrameNode && this !is LineNumberNode
 	}
-
-	fun AbstractInsnNode.nextNode():AbstractInsnNode?{
+	
+	fun AbstractInsnNode.nextNode(): AbstractInsnNode? {
 		var next: AbstractInsnNode? = next ?: return null
 		while (next?.isInstruction() != true)
 			next = next?.next
 		return next
 	}
+	
 	fun AbstractInsnNode.prev(): AbstractInsnNode? {
 		var prev: AbstractInsnNode? = previous ?: return null
 		while (prev?.isInstruction() != true)
 			prev = prev?.previous
 		return prev
 	}
+	
 	fun AbstractInsnNode.isConstant(): Boolean {
-		return when(opcode){
+		return when (opcode) {
 			BIPUSH, SIPUSH, ICONST_0, ICONST_1, ICONST_2, ICONST_3, ICONST_4, ICONST_5, ICONST_M1, LCONST_0, LCONST_1, DCONST_0, DCONST_1, ACONST_NULL, FCONST_0, FCONST_1, FCONST_2 -> true
-			else -> {
-				when(this){
-					is LdcInsnNode ->{
-						this.cst !is Type
-					}
-					else -> false
+			else -> when (this) {
+				is LdcInsnNode -> {
+					this.cst !is Type
 				}
+				else -> false
 			}
 		}
 	}
+	
 	fun AbstractInsnNode.terminates(): Boolean {
 		return when (opcode) {
 			RETURN,
@@ -46,11 +47,12 @@ object NodeUtils {
 			ATHROW,
 			TABLESWITCH,
 			LOOKUPSWITCH,
-			GOTO -> true
+			GOTO,
+			-> true
 			else -> false
 		}
 	}
-
+	
 	fun AbstractInsnNode.toInt(): Int {
 		return when (this) {
 			is IntInsnNode -> {
@@ -74,11 +76,13 @@ object NodeUtils {
 			else -> throw IllegalArgumentException("WTF? Node is not InsnNode or IntInsnNode")
 		}
 	}
-	fun insnListOf(vararg insnNode: AbstractInsnNode):InsnList{
-		return InsnList().also {
-			insnNode.forEach { node->it.add(node) }
-		}
+	
+	fun insnListOf(vararg insnNode: AbstractInsnNode): InsnList {
+		val list = InsnList()
+		insnNode.forEach { node -> list.add(node) }
+		return list
 	}
+	
 	/**
 	 * Generates the <code>InsnNode</code> for a number.
 	 * It will find the most Optimistic node for the number.
@@ -86,7 +90,7 @@ object NodeUtils {
 	 * @return a insnNode of a constant number instrument
 	 * @throws IllegalArgumentException if the number is out of range.
 	 */
-	fun fromInt(number: Int): AbstractInsnNode {
+	fun toNode(number: Int): AbstractInsnNode {
 		return when (number) {
 			-1 -> InsnNode(ICONST_M1)
 			0 -> InsnNode(ICONST_0)
@@ -104,7 +108,7 @@ object NodeUtils {
 			}
 		}
 	}
-
+	
 	fun AbstractInsnNode.isConstantInt(): Boolean {
 		if (this is LdcInsnNode)
 			return cst is Int

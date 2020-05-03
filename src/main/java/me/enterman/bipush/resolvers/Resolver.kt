@@ -7,5 +7,5 @@ import org.slf4j.LoggerFactory
 abstract class Resolver {
     
     val logger:Logger = LoggerFactory.getLogger(this::class.java)
-    abstract fun doOn(classes: Map<String,ClassNode>) : Boolean
+    abstract fun doOn(classes: MutableMap<String,ClassNode>) : Boolean
 }

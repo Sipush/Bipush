@@ -11,7 +11,7 @@ import org.objectweb.asm.tree.analysis.Frame
 
 class DeadCodeRemover :Resolver(){
     @Throws(Throwable::class)
-    override fun doOn(classes:Map<String,ClassNode>): Boolean {
+    override fun doOn(classes:MutableMap<String,ClassNode>): Boolean {
         var deadInstructions = 0
         for (classNode in classes.values) {
             for (methodNode in classNode.methods) {

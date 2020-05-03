@@ -5,7 +5,6 @@ import me.enterman.bipush.resolvers.Resolver
 import org.objectweb.asm.Opcodes.PUTSTATIC
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldInsnNode
-import org.objectweb.asm.tree.MethodNode
 import java.lang.reflect.Modifier
 
 
@@ -15,7 +14,7 @@ import java.lang.reflect.Modifier
  * See `me.itzsomebody.radon.transformers.obfuscator.flow.GotoReplacer`
  */
 class FinalBoolean:Resolver(){
-	override fun doOn(classes: Map<String, ClassNode>): Boolean {
+	override fun doOn(classes: MutableMap<String, ClassNode>): Boolean {
 		classes.values.forEach {classNode ->
 			classNode.fields.forEach { fieldNode ->
 				if(fieldNode.desc == "Z" && Modifier.isFinal(fieldNode.access) && Modifier.isPrivate(fieldNode.access) && Modifier.isStatic(fieldNode.access)){
